@@ -1,0 +1,7 @@
+# Drag-and-drop support (optional but recommended).
+# Without it the app still works via the "Add files..." button.
+tkinterdnd2>=0.4.0
+
+# Best-quality voice/music separation (optional, large download ~ PyTorch).
+# Skip this if you only need ffmpeg-based cleanup.
+# demucs>=4.0.0
