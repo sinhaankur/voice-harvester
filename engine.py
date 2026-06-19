@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 import subprocess
 import tempfile
 import wave
@@ -61,6 +62,18 @@ def have_demucs() -> bool:
         return False
 
 
+def _demucs_cmd() -> Optional[List[str]]:
+    """How to invoke Demucs: the `demucs` CLI if on PATH, else `python -m demucs`
+    (works when demucs is installed only as a module — e.g. in a venv)."""
+    if _which("demucs") is not None:
+        return ["demucs"]
+    try:
+        import demucs  # noqa: F401
+        return [sys.executable, "-m", "demucs"]
+    except Exception:
+        return None
+
+
 def _run(cmd: List[str]) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True)
 
@@ -98,9 +111,10 @@ def _extract_audio(src: str, dst_wav: str) -> None:
 
 def _isolate_with_demucs(in_wav: str, work_dir: str) -> str:
     """Run Demucs and return the path to the separated vocals stem."""
-    cp = _run([
-        "demucs", "--two-stems", "vocals", "-o", work_dir, in_wav,
-    ])
+    base = _demucs_cmd()
+    if base is None:
+        raise ProcessingError("Demucs is not available.")
+    cp = _run(base + ["--two-stems", "vocals", "-o", work_dir, in_wav])
     if cp.returncode != 0:
         raise ProcessingError(f"Demucs failed:\n{cp.stderr[-500:]}")
     # Demucs writes <work_dir>/<model>/<trackname>/vocals.wav
@@ -154,6 +168,7 @@ def process_file(
     log: Callable[[str], None] = print,
 ) -> FileResult:
     """Process one file end-to-end. Returns a FileResult."""
+    os.makedirs(out_dir, exist_ok=True)
     name = os.path.splitext(os.path.basename(src))[0]
     safe = "".join(c if c.isalnum() or c in "-_ " else "_" for c in name).strip() or "clip"
     out_wav = os.path.join(out_dir, f"{safe}_voice.wav")
