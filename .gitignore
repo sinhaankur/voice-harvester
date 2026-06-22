@@ -3,3 +3,6 @@ __pycache__/
 *.wav
 VoiceHarvester_output/
 .venv/
+macos/VoiceHarvester/Voice Harvester.app/
+macos/VoiceHarvester/.build/
+macos/VoiceHarvester/AppIcon.icns
